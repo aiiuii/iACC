@@ -71,6 +71,12 @@ class MainTabBarController: UITabBarController {
 				vc?.select(friend: item) 
 			})
 
+		vc.cache = FriendsCacheItemsServiceAdapter(
+			cache: friendsCache,
+			select: { [weak vc] item in
+				vc?.select(friend: item) 
+			})
+
 		return vc
 	}
 	
@@ -141,6 +147,25 @@ struct FriendAPIItemsServiceAdapter: ItemsService {
 				completion(result.map { items in 
 					cache.save(items)
 
+					return items.map { item in 
+						ItemViewModel(friend: item, selection: {
+							self.select(item)
+						})
+					}
+				})
+			}
+		}
+	}
+}
+
+struct FriendsCacheItemsServiceAdapter: ItemsService {
+	let cache: FriendsCache
+	let select: (Friend) -> Void
+	
+	func loadItems(completion: @escaping (Result<[ItemViewModel], Error>) -> Void) {
+		cache.loadFriends { result in
+			DispatchQueue.mainAsyncIfNeeded {
+				completion(result.map { items in 
 					return items.map { item in 
 						ItemViewModel(friend: item, selection: {
 							self.select(item)
